@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Command Center - JAGUARD PRESISI</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; background: #020617; color: white; overflow: hidden; }
+        
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 99999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: #0f172a; padding: 30px; border-radius: 12px; width: 380px; border: 1px solid #2563eb; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .login-box h2 { text-align: center; color: #38bdf8; margin-top: 0; margin-bottom: 6px; }
+
+        #sidebar { width: 380px; background: #0f172a; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 1000; border-right: 1px solid #1e293b; height: 100vh; }
+        #main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #header { background: #1e293b; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; }
+        #map { flex: 1; height: 100%; }
+        
+        input, select, textarea, button { width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #1d4ed8; }
+
+        .tab-nav { display: flex; margin-top: 10px; border-bottom: 2px solid #334155; }
+        .tab-btn { flex: 1; padding: 10px 4px; text-align: center; background: #1e293b; color: #94a3b8; font-size: 11px; font-weight: bold; cursor: pointer; border: none; border-radius: 6px 6px 0 0; margin-right: 2px; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .tab-content { display: none; flex: 1; overflow-y: auto; padding-top: 10px; }
+        .tab-content.active { display: flex; flex-direction: column; }
+        
+        .card { background: #1e293b; padding: 10px; border-radius: 6px; margin-top: 8px; border-left: 4px solid #64748b; position: relative; }
+        .card.online { border-left-color: #22c55e; }
+        .card.darurat { border-left-color: #ef4444; background: #450a0a; animation: blink 1s infinite; }
+        .card-title { font-weight: bold; font-size: 13px; }
+        .status-offline { color: #94a3b8; font-size: 11px; font-weight: bold; }
+        .status-online { color: #22c55e; font-size: 11px; font-weight: bold; }
+        .status-darurat { color: #f87171; font-size: 11px; font-weight: bold; }
+        
+        .btn-hapus { background: #ef4444; width: auto; padding: 4px 8px; font-size: 10px; float: right; margin: 0; }
+        #clock { font-size: 14px; font-weight: bold; color: #38bdf8; }
+        .laporan-box { background: #020617; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 12px; }
+        .btn-detail { background: #0ea5e9; font-size: 11px; padding: 4px 8px; margin-top: 6px; border-radius: 4px; display: inline-block; text-align: center; width: auto; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content { background: #0f172a; padding: 20px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid #38bdf8; position: relative; }
+        .modal-close { position: absolute; top: 10px; right: 14px; color: #ef4444; font-size: 20px; font-weight: bold; cursor: pointer; }
+        .modal-img { width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 10px; border: 1px solid #334155; background: #020617; }
+
+        #toast { visibility: hidden; min-width: 280px; background-color: #059669; color: #fff; text-align: center; border-radius: 8px; padding: 12px 16px; position: fixed; z-index: 10000; right: 20px; top: 20px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        #toast.show { visibility: visible; animation: fadein 0.3s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from { top: 0; opacity: 0; } to { top: 20px; opacity: 1; } }
+        @keyframes fadeout { from { top: 20px; opacity: 1; } to { top: 0; opacity: 0; } }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>🛡️ JAGUARD PRESISI</h2>
+            <p style="text-align:center; font-size:11px; color:#94a3b8; margin-top:-4px; margin-bottom:16px;">Otentikasi Admin Command Center</p>
+            
+            <label style="font-size:11px; color:#cbd5e1;">USERNAME ADMIN:</label>
+            <input type="text" id="login-user" placeholder="Masukkan Username">
+            
+            <label style="font-size:11px; color:#cbd5e1; margin-top:8px; display:block;">PASSWORD:</label>
+            <input type="password" id="login-pass" placeholder="Masukkan Password">
+            
+            <label style="font-size:11px; color:#cbd5e1; margin-top:8px; display:block;">SESI PIKET:</label>
+            <select id="login-piket">
+                <option value="Piket Shift 1 (08.00 - 16.00)">Piket Shift 1 (08.00 - 16.00)</option>
+                <option value="Piket Shift 2 (16.00 - 24.00)">Piket Shift 2 (16.00 - 24.00)</option>
+                <option value="Piket Shift 3 (00.00 - 08.00)">Piket Shift 3 (00.00 - 08.00)</option>
+            </select>
+
+            <label style="font-size:11px; color:#cbd5e1; margin-top:8px; display:block;">NAMA MARKAS / POLRES (SESUAI LOKASI):</label>
+            <input type="text" id="login-markas" placeholder="Ketik Wilayah Hukum Asli">
+
+            <button onclick="prosesLoginAdmin()" style="margin-top:16px; background:#2563eb; padding:12px;">🔓 MASUK DASHBOARD COMMAND CENTER</button>
+            <p id="login-err" style="color:#f87171; font-size:11px; text-align:center; margin-top:8px;"></p>
+        </div>
+    </div>
+
+    <div id="toast">Notifikasi</div>
+
+    <div id="sidebar">
+        <h2 style="margin:0; color:#38bdf8;">🛡️ JAGUARD PRESISI</h2>
+        <p style="font-size: 11px; color: #22c55e; margin-top: 2px; font-weight:bold;" id="label-piket-aktif">Sesi: Memuat Sesi...</p>
+        
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab(event, 'tab-anggota')">👮 PERSONEL & MAP</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-komando')">📢 KOMANDO & LAPORAN</button>
+        </div>
+
+        <div id="tab-anggota" class="tab-content active">
+            <h4 style="margin-bottom: 0; margin-top: 4px;">Tambah Personel</h4>
+            <input type="text" id="nrp" placeholder="NRP Personel">
+            <input type="text" id="nama" placeholder="Nama Lengkap">
+            <input type="text" id="pangkat" placeholder="Pangkat">
+            <button onclick="tambahAnggota()">+ Daftarkan Personel</button>
+
+            <hr style="border-color: #334155; width: 100%; margin-top: 12px;">
+            <h4 style="margin: 0; color:#38bdf8;">📋 DAFTAR PERSONEL TERDAFTAR</h4>
+            <div id="list-anggota" style="flex:1; overflow-y:auto; margin-top:6px;"></div>
+        </div>
+
+        <div id="tab-komando" class="tab-content">
+            <div style="background:#450a0a; padding:10px; border-radius:8px; border:1px solid #ef4444;">
+                <h4 style="margin:0; color:#f87171;">📢 SIARAN DARURAT ADMIN</h4>
+                <textarea id="pesan-siaran" rows="2" placeholder="Tulis instruksi masal untuk seluruh HP anggota..."></textarea>
+                <button onclick="kirimSiaranAdmin()" style="background:#dc2626; margin-top:6px;">🚨 KIRIM PANIC BROADCAST</button>
+            </div>
+
+            <hr style="border-color: #334155; width: 100%; margin-top: 12px;">
+            <h4 style="margin: 0; color:#38bdf8;">🚨 LOG LAPORAN PIKET INI</h4>
+            <div id="list-laporan" style="flex:1; overflow-y: auto; margin-top:6px;"></div>
+        </div>
+
+        <button onclick="location.reload()" style="background:#475569; font-size:11px; margin-top:8px;">🚪 Keluar Sesi Piket</button>
+    </div>
+
+    <div id="main-content">
+        <div id="header">
+            <div>
+                <span style="font-size: 12px; color: #94a3b8;">MONITORING WILAYAH HUKUM:</span>
+                <b id="label-markas" style="margin-left: 8px; color: #f8fafc; font-size: 16px;">Memuat Markas...</b>
+            </div>
+            <div id="clock">-- Loading Waktu --</div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <div id="modal-detail" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" onclick="tutupModal()">&times;</span>
+            <h3 id="m-nama" style="margin-top:0; color:#38bdf8;">Detail Laporan</h3>
+            <p id="m-waktu" style="font-size:12px; color:#94a3b8; margin-top:-10px;"></p>
+            <hr style="border-color:#334155;">
+            <p id="m-ket" style="font-size:14px; color:#f8fafc;"></p>
+            <div id="m-foto-container"></div>
+            
+            <hr style="border-color:#334155; margin-top:14px;">
+            <label style="font-size:12px; color:#38bdf8; font-weight:bold;">💬 BALAS LAPORAN ANGGOTA INI:</label>
+            <input type="text" id="input-balasan" placeholder="Ketik pesan balasan/validasi...">
+            <button onclick="kirimBalasanAdmin()" style="background:#0284c7; margin-top:6px;">✉️ Kirim Balasan</button>
+        </div>
+    </div>
+
+    <script>
+        var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+
+        var map = L.map('map', { center: [-2.5489, 118.0149], zoom: 5, layers: [googleHybrid] });
+        L.control.layers({ "🛰️ Satelit (Google Earth)": googleHybrid, "🗺️ Peta Jalan": osmLayer }).addTo(map);
+
+        var markers = {};
+        var markasMarker = null;
+        var cachedLaporan = [];
+        var activeLaporanId = null;
+        var adminGpsLat = 0.0, adminGpsLng = 0.0;
+
+        // BACA GPS FISIK PERANGKAT KONTROL SECARA DYNAMIS
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                adminGpsLat = pos.coords.latitude;
+                adminGpsLng = pos.coords.longitude;
+            });
+        }
+
+        function prosesLoginAdmin() {
+            var user = document.getElementById('login-user').value.trim();
+            var pass = document.getElementById('login-pass').value.trim();
+            var piket = document.getElementById('login-piket').value;
+            var markasInput = document.getElementById('login-markas').value.trim();
+
+            if (!user || !pass || !markasInput) {
+                document.getElementById('login-err').innerText = 'Harap isi seluruh field login!'; return;
+            }
+
+            document.getElementById('login-err').style.color = '#38bdf8';
+            document.getElementById('login-err').innerText = '🔍 Menghubungkan GPS & Geocoding Wilayah...';
+
+            // GEOCODING DINAMIS REAL-TIME (PENCARIAN KOORDINAT RESMI MARKAS YANG DIKTIK)
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(markasInput + ' Indonesia')}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        document.getElementById('login-err').style.color = '#f87171';
+                        document.getElementById('login-err').innerText = 'Peta tidak menemukan lokasi markas yang Anda ketik!';
+                        return;
+                    }
+
+                    var latResmiMarkas = parseFloat(data[0].lat);
+                    var lngResmiMarkas = parseFloat(data[0].lon);
+
+                    // Kirim Data Validasi ke Server Backend
+                    fetch('/api/admin/login', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            username: user,
+                            password: pass,
+                            nama_piket: piket,
+                            nama_markas: markasInput,
+                            lat_gps_admin: adminGpsLat,
+                            lng_gps_admin: adminGpsLng,
+                            lat_markas_resmi: latResmiMarkas,
+                            lng_markas_resmi: lngResmiMarkas
+                        })
+                    })
+                    .then(res => {
+                        if (!res.ok) return res.json().then(e => { throw new Error(e.detail); });
+                        return res.json();
+                    })
+                    .then(resData => {
+                        document.getElementById('login-overlay').style.display = 'none';
+                        document.getElementById('label-markas').innerText = markasInput.toUpperCase();
+                        document.getElementById('label-piket-aktif').innerText = `Sesi: ${piket} (${user})`;
+                        
+                        terbangKeKoordinat(latResmiMarkas, lngResmiMarkas, markasInput);
+                        loadLocations(); loadLaporan();
+                    })
+                    .catch(err => {
+                        document.getElementById('login-err').style.color = '#f87171';
+                        document.getElementById('login-err').innerText = err.message;
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('login-err').style.color = '#f87171';
+                    document.getElementById('login-err').innerText = 'Gagal mengakses layanan peta lokasi!';
+                });
+        }
+
+        function showToast(msg) {
+            var t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(function(){ t.className = t.className.replace("show", ""); }, 3000);
+        }
+
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            e.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function updateClock() {
+            var now = new Date();
+            var hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            var bulanArr = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des'];
+            document.getElementById('clock').innerHTML = `📅 ${hariArr[now.getDay()]}, ${now.getDate()} ${bulanArr[now.getMonth()]} ${now.getFullYear()} | 🕒 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} WIB`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function terbangKeKoordinat(lat, lon, label) {
+            map.flyTo([lat, lon], 13, { duration: 2.0 });
+            if (markasMarker) map.removeLayer(markasMarker);
+            markasMarker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>🏢 MARKAS COMMAND CENTER</b><br>${label.toUpperCase()}`).openPopup();
+        }
+
+        function kirimSiaranAdmin() {
+            var msg = document.getElementById('pesan-siaran').value.trim();
+            if (!msg) { showToast('⚠️ Isi instruksi siaran terlebih dahulu'); return; }
+
+            fetch('/api/admin/broadcast', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pesan: msg })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showToast('🚨 Siaran Darurat Dikirim ke Seluruh HP Anggota!');
+                document.getElementById('pesan-siaran').value = '';
+            });
+        }
+
+        function loadLocations() {
+            fetch('/api/admin/locations')
+                .then(res => res.json())
+                .then(data => {
+                    let listHtml = '';
+                    data.forEach(item => {
+                        let isOnline = (item.latitude !== 0 && item.longitude !== 0);
+                        let isDarurat = (item.status_darurat === 1);
+                        
+                        let statusTxt = '<span class="status-offline">🔴 Offline</span>';
+                        let cardClass = 'card';
+
+                        if (isOnline) {
+                            if (isDarurat) {
+                                statusTxt = '<span class="status-darurat">⚠️ BAHAYA / DARURAT!</span>';
+                                cardClass = 'card darurat';
+                            } else {
+                                statusTxt = '<span class="status-online">🟢 GPS Aktif</span>';
+                                cardClass = 'card online';
+                            }
+                        }
+
+                        listHtml += `
+                            <div class="${cardClass}">
+                                <button class="btn-hapus" onclick="hapusAnggota('${item.nrp}', '${item.nama}')">Hapus</button>
+                                <div class="card-title">${item.nama} (${item.pangkat})</div>
+                                <div style="font-size:11px; color:#cbd5e1;">NRP: ${item.nrp}</div>
+                                <div style="margin-top:4px;">${statusTxt}</div>
+                            </div>
+                        `;
+
+                        if (isOnline) {
+                            if (markers[item.nrp]) map.removeLayer(markers[item.nrp]);
+
+                            if (isDarurat) {
+                                markers[item.nrp] = L.circleMarker([item.latitude, item.longitude], {
+                                    color: 'red', fillColor: '#f87171', fillOpacity: 0.8, radius: 14
+                                }).addTo(map).bindPopup(`<b style="color:red;">⚠️ DARURAT (PANIC)</b><br><b>${item.nama}</b> (${item.pangkat})`).openPopup();
+                            } else {
+                                markers[item.nrp] = L.marker([item.latitude, item.longitude]).addTo(map)
+                                    .bindPopup(`<b>${item.nama}</b> (${item.pangkat})<br>NRP: ${item.nrp}`);
+                            }
+                        } else {
+                            if (markers[item.nrp]) { map.removeLayer(markers[item.nrp]); delete markers[item.nrp]; }
+                        }
+                    });
+                    document.getElementById('list-anggota').innerHTML = listHtml || '<div style="font-size:11px; color:#64748b;">Belum ada anggota terdaftar</div>';
+                });
+        }
+
+        function loadLaporan() {
+            fetch('/api/admin/laporan')
+                .then(res => res.json())
+                .then(data => {
+                    cachedLaporan = data;
+                    let html = '';
+                    data.forEach((lap, index) => {
+                        let statusBalasan = lap.balasan_admin ? '<span style="color:#22c55e;">✓ Dibalas</span>' : '<span style="color:#f59e0b;">Belum Dibalas</span>';
+                        html += `
+                            <div class="laporan-box">
+                                <b style="color:#38bdf8;">${lap.nama} (${lap.nrp})</b> <span style="font-size:10px; float:right; color:#94a3b8;">${lap.waktu}</span><br>
+                                <span style="color:#e2e8f0;">${lap.keterangan.substring(0, 40)}...</span><br>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                    <button class="btn-detail" onclick="bukaModalDetail(${index})">🔍 Respon / Balas</button>
+                                    <span style="font-size:10px;">${statusBalasan}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('list-laporan').innerHTML = html || '<div style="font-size:11px; color:#64748b;">Belum ada laporan di sesi piket ini</div>';
+                });
+        }
+
+        function bukaModalDetail(index) {
+            var lap = cachedLaporan[index];
+            if (!lap) return;
+
+            activeLaporanId = lap.id;
+            document.getElementById('m-nama').innerText = `${lap.nama} (${lap.nrp})`;
+            document.getElementById('m-waktu').innerText = `Waktu Kirim: ${lap.waktu}`;
+            document.getElementById('m-ket').innerText = lap.keterangan;
+            document.getElementById('input-balasan').value = lap.balasan_admin || '';
+
+            var fotoContainer = document.getElementById('m-foto-container');
+            if (lap.foto && lap.foto.length > 100) {
+                fotoContainer.innerHTML = `<label style="font-size:12px; color:#94a3b8;">📷 BUKTI FOTO KEJADIAN:</label><br><img src="${lap.foto}" class="modal-img">`;
+            } else {
+                fotoContainer.innerHTML = '<p style="font-size:12px; color:#64748b; margin-top:10px;">(Tidak melampirkan foto)</p>';
+            }
+
+            document.getElementById('modal-detail').style.display = 'flex';
+        }
+
+        function kirimBalasanAdmin() {
+            var txt = document.getElementById('input-balasan').value.trim();
+            if (!txt || !activeLaporanId) { showToast('⚠️ Isi balasan terlebih dahulu'); return; }
+
+            fetch('/api/admin/balas', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ laporan_id: activeLaporanId, balasan: txt })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showToast('✉️ Balasan Berhasil Terkirim ke HP Anggota!');
+                tutupModal();
+                loadLaporan();
+            });
+        }
+
+        function tutupModal() {
+            document.getElementById('modal-detail').style.display = 'none';
+            activeLaporanId = null;
+        }
+
+        function tambahAnggota() {
+            let nrp = document.getElementById('nrp').value;
+            let nama = document.getElementById('nama').value;
+            let pangkat = document.getElementById('pangkat').value;
+            if (!nrp || !nama) { showToast('⚠️ NRP dan Nama wajib diisi!'); return; }
+
+            fetch(`/api/anggota/register?nrp=${nrp}&nama=${nama}&pangkat=${pangkat}`, {method: 'POST'}).then(() => {
+                showToast(`✅ Anggota ${nama} terdaftar`);
+                document.getElementById('nrp').value = ''; document.getElementById('nama').value = ''; document.getElementById('pangkat').value = '';
+                loadLocations();
+            });
+        }
+
+        function hapusAnggota(nrp, nama) {
+            fetch(`/api/anggota/hapus/${nrp}`, {method: 'DELETE'}).then(() => {
+                showToast('🗑️ Anggota berhasil dihapus');
+                loadLocations();
+            });
+        }
+
+        setInterval(loadLocations, 3000); setInterval(loadLaporan, 3000);
+    </script>
+</body>
+</html>
