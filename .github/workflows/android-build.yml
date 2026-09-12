@@ -26,20 +26,22 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build & Sign APK via Cordova
+      - name: Build & Sign APK with Geolocation Permission
         run: |
           npm install -g cordova
           cordova create jaguard_app com.jaguard.presisi "JAGUARD PRESISI"
           cp index.html manifest.json jaguard_app/www/
           cd jaguard_app
           cordova platform add android
+          
+          # Tambahkan Plugin Geolocation resmi agar Android memberikan izin GPS
+          cordova plugin add cordova-plugin-geolocation
+          
           cordova build android --release -- --packageType=apk
           
-          # Buat keystore langsung di folder APK release
+          # Process Signing
           cd platforms/android/app/build/outputs/apk/release/
           keytool -genkey -v -keystore release.keystore -alias jaguard -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Jaguard, OU=Presisi, O=Jaguard, L=City, S=State, C=ID"
-          
-          # Sign APK di lokasi yang sama
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore release.keystore -storepass 123456 app-release-unsigned.apk jaguard
           mv app-release-unsigned.apk JAGUARD_PRESISI_SIGNED.apk
 
