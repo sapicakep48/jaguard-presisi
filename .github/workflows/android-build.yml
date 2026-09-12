@@ -30,7 +30,8 @@ jobs:
         run: |
           npm install -g cordova
           cordova create jaguard_app com.jaguard.presisi "JAGUARD PRESISI"
-          cp index.html manifest.json jaguard_app/www/
+          cp mobile.html jaguard_app/www/index.html
+          cp manifest.json jaguard_app/www/
           cd jaguard_app
           cordova platform add android
           
