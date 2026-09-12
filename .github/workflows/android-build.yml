@@ -29,11 +29,13 @@ jobs:
       - name: Install Bubblewrap CLI & Build APK
         run: |
           npm install -g @bubblewrap/cli
-          yes | bubblewrap init --manifest=manifest.json
-          bubblewrap build --skip-signing
+          keytool -genkey -v -keystore android.keystore -alias androidbuilder -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Jaguard, OU=Presisi, O=Jaguard, L=City, S=State, C=ID"
+          npx bubblewrap init --manifest=manifest.json --directory=./build-app
+          cd build-app
+          npx bubblewrap build --signingKeyPath=../android.keystore --signingKeyAlias=androidbuilder
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: JAGUARD_PRESISI_APK
-          path: ./*.apk
+          path: build-app/*.apk
