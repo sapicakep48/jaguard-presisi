@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 jobs:
   build-apk:
@@ -12,15 +13,27 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build Android App (PWABuilder)
-        uses: pwa-builder/builder-action@v1.0.0
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
         with:
-          manifest-file: 'manifest.json'
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bubblewrap CLI & Build APK
+        run: |
+          npm install -g @bubblewrap/cli
+          yes | bubblewrap init --manifest=manifest.json
+          bubblewrap build --skip-signing
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: JAGUARD_PRESISI_APK
-          path: '**/*.apk'
+          path: ./*.apk
