@@ -1,0 +1,16 @@
+{
+  "short_name": "JAGUARD",
+  "name": "JAGUARD PRESISI",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1042/1042259.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#002244",
+  "theme_color": "#002244",
+  "display": "standalone",
+  "orientation": "portrait"
+}

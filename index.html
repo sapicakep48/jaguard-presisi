@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JAGUARD APP - Mobile Personel</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #e2e8f0; color: #0f172a; overflow-x: hidden; }
+        
+        .app-container { max-width: 420px; margin: 0 auto; background: #ffffff; min-height: 100vh; display: flex; flex-direction: column; border-left: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; position: relative; }
+        .app-header { background: #002244; color: white; padding: 12px; border-bottom: 4px solid #f59e0b; position: relative; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .btn-hamburger { font-size: 22px; cursor: pointer; color: white; padding: 2px 6px; border-radius: 4px; }
+        .btn-hamburger:hover { background: rgba(255,255,255,0.1); }
+        .title-app { text-align: center; font-size: 18px; font-weight: 800; color: #38bdf8; margin-top: 4px; }
+
+        /* NAVIGASI MENU SLIDE (Garis 3 / Hamburger Menu) */
+        .drawer-menu { position: absolute; top: 0; left: -280px; width: 280px; height: 100%; background: #0f172a; color: white; z-index: 10000; transition: left 0.3s ease; padding: 20px 16px; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+        .drawer-menu.open { left: 0; }
+        .drawer-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; }
+        .drawer-overlay.open { display: block; }
+        .drawer-item { padding: 12px 10px; border-bottom: 1px solid #1e293b; font-size: 13px; font-weight: 600; cursor: pointer; color: #cbd5e1; }
+        .drawer-item:hover { color: #38bdf8; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px; background: #f1f5f9; }
+        .grid-item { background: #003366; border-radius: 10px; padding: 10px 4px; text-align: center; color: white; cursor: pointer; }
+        .grid-item.darurat { background: #dc2626; animation: pulse-border 2s infinite; }
+        .icon-box { font-size: 28px; }
+        .item-title { font-size: 10px; font-weight: bold; margin-top: 4px; background: #001e3d; padding: 2px 0; border-radius: 4px; }
+        .grid-item.darurat .item-title { background: #991b1b; }
+
+        .content-section { padding: 14px; flex: 1; }
+        .panel-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; display: none; }
+        .panel-card.active { display: block; }
+        .panel-title { font-size: 13px; font-weight: bold; color: #002244; margin-bottom: 8px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
+
+        input, textarea, button { width: 100%; padding: 10px; margin-top: 6px; border-radius: 6px; border: 1px solid #94a3b8; font-size: 13px; }
+        button { background: #003366; color: white; font-weight: bold; border: none; cursor: pointer; }
+
+        /* TOAST MOBILE */
+        #toast-mobile { visibility: hidden; min-width: 200px; background-color: #059669; color: #fff; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 10000; left: 50%; transform: translateX(-50%); bottom: 20px; font-size: 12px; font-weight: bold; }
+        #toast-mobile.show { visibility: visible; animation: fadein-m 0.3s, fadeout-m 0.5s 2.5s; }
+
+        .modal-siaran { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(185, 28, 28, 0.95); z-index: 99999; justify-content: center; align-items: center; padding: 20px; }
+        .modal-siaran-box { background: #ffffff; padding: 20px; border-radius: 12px; text-align: center; border: 4px solid #7f1d1d; width: 100%; }
+        .item-balasan { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 12px; }
+
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
+        @keyframes fadein-m { from { bottom: 0; opacity: 0; } to { bottom: 20px; opacity: 1; } }
+        @keyframes fadeout-m { from { bottom: 20px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="toast-mobile">Notifikasi</div>
+
+    <!-- OVERLAY & DRAWER SIDEBAR (Menu Garis 3) -->
+    <div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer()"></div>
+    <div id="drawer-menu" class="drawer-menu">
+        <h3 style="margin-top:0; color:#38bdf8;">🛡️ JAGUARD MENU</h3>
+        <p style="font-size:11px; color:#94a3b8;">Sistem Presisi Lapangan</p>
+        <hr style="border-color:#334155;">
+        <div class="drawer-item" onclick="bukaPanel('profil'); toggleDrawer();">👤 Akun & Profil Saya</div>
+        <div class="drawer-item" onclick="bukaPanel('lokasi'); toggleDrawer();">📍 Status Sinyal GPS</div>
+        <div class="drawer-item" onclick="bukaPanel('notifikasi'); toggleDrawer();">🔔 Pusat Notifikasi</div>
+        <div class="drawer-item" onclick="location.reload();">🔄 Refresh Aplikasi</div>
+    </div>
+
+    <div class="app-header">
+        <div class="top-bar">
+            <!-- IKON GARIS 3 AKTIF -->
+            <div class="btn-hamburger" onclick="toggleDrawer()">☰</div>
+            <span style="font-size: 11px;">JAGUARD PRESISI</span>
+        </div>
+        <div style="text-align:center;">
+            <div style="font-size:36px;">🛡️</div>
+            <div class="title-app">JAGUARD APP</div>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="grid-item" onclick="bukaPanel('profil')">
+            <div class="icon-box">👤</div>
+            <div class="item-title">PROFIL</div>
+        </div>
+        <div class="grid-item darurat" onclick="kirimPanic()">
+            <div class="icon-box">🚨</div>
+            <div class="item-title">DARURAT</div>
+        </div>
+        <div class="grid-item" onclick="bukaPanel('lokasi')">
+            <div class="icon-box">📍</div>
+            <div class="item-title">LOKASI</div>
+        </div>
+        <div class="grid-item" onclick="bukaPanel('kamera')">
+            <div class="icon-box">📷</div>
+            <div class="item-title">KAMERA</div>
+        </div>
+        <div class="grid-item" onclick="bukaPanel('pesan')">
+            <div class="icon-box">💬</div>
+            <div class="item-title">PESAN</div>
+        </div>
+        <div class="grid-item" onclick="bukaPanel('notifikasi')">
+            <div class="icon-box">🔔</div>
+            <div class="item-title">NOTIFIKASI</div>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="panel-card active" id="panel-profil">
+            <div class="panel-title">👤 REGISTRASI & GPS</div>
+            <label style="font-size:11px; font-weight:bold;">NRP PERSONEL:</label>
+            <input type="text" id="nrp" value="123456">
+            <label style="font-size:11px; font-weight:bold; margin-top:6px; display:block;">NAMA LENGKAP:</label>
+            <input type="text" id="nama" value="andi">
+            <button onclick="hubungkanGPS()">🟢 HUBUNGKAN GPS LAPANGAN</button>
+            <p id="status-gps" style="font-size:11px; font-weight:bold; color:#64748b; text-align:center; margin-top:8px;">Status: GPS Belum Aktif</p>
+        </div>
+
+        <div class="panel-card" id="panel-lokasi">
+            <div class="panel-title">📍 LOKASI SAYA</div>
+            <p id="txt-koordinat" style="font-size:12px;">Aktifkan GPS di panel Profil terlebih dahulu.</p>
+        </div>
+
+        <div class="panel-card" id="panel-kamera">
+            <div class="panel-title">📷 AMBIL FOTO KEJADIAN</div>
+            <input type="file" id="foto-input" accept="image/*" capture="environment" onchange="previewFoto(event)">
+            <textarea id="ket-kamera" rows="2" placeholder="Deskripsi foto..."></textarea>
+            <button onclick="kirimLaporanFoto()" style="background:#059669;">📤 Kirim Foto</button>
+        </div>
+
+        <div class="panel-card" id="panel-pesan">
+            <div class="panel-title">💬 PESAN & BALASAN ADMIN</div>
+            <textarea id="ket-pesan" rows="2" placeholder="Ketik laporan kegiatan..."></textarea>
+            <button onclick="kirimPesanTeks()" style="background:#0284c7;">📤 Kirim Pesan</button>
+            <hr style="border-color:#cbd5e1; margin-top:10px;">
+            <div id="list-pesan-balasan"></div>
+        </div>
+
+        <div class="panel-card" id="panel-notifikasi">
+            <div class="panel-title">🔔 NOTIFIKASI SAYA</div>
+            <div id="list-notifikasi"></div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-siaran-admin" class="modal-siaran">
+    <div class="modal-siaran-box">
+        <h1 style="color:#dc2626; margin:0; font-size:36px;">🚨</h1>
+        <h2 style="color:#7f1d1d; margin-top:4px;">INSTRUKSI DARURAT COMMAND CENTER</h2>
+        <p id="txt-siaran-admin" style="font-size:16px; font-weight:bold; color:#0f172a; background:#fef2f2; padding:12px; border-radius:6px; border:1px solid #fca5a5;"></p>
+        <button onclick="tutupSiaran()" style="background:#dc2626; font-size:14px; padding:12px;">SIAP, PATUHI PERINTAH!</button>
+    </div>
+</div>
+
+<script>
+    var currentLat = 0.0, currentLng = 0.0, base64Foto = "", gpsInterval = null, lastSiaran = "";
+
+    function showToastMobile(msg) {
+        var t = document.getElementById("toast-mobile");
+        t.innerText = msg;
+        t.className = "show";
+        setTimeout(function(){ t.className = t.className.replace("show", ""); }, 3000);
+    }
+
+    function toggleDrawer() {
+        document.getElementById('drawer-menu').classList.toggle('open');
+        document.getElementById('drawer-overlay').classList.toggle('open');
+    }
+
+    function bukaPanel(nama) {
+        document.querySelectorAll('.panel-card').forEach(p => p.classList.remove('active'));
+        var target = document.getElementById('panel-' + nama);
+        if (target) target.classList.add('active');
+    }
+
+    function previewFoto(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(evt) { base64Foto = evt.target.result; };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function hubungkanGPS() {
+        var nrp = document.getElementById('nrp').value.trim();
+        if (!nrp) {
+            showToastMobile('⚠️ Isi NRP Personel dahulu!');
+            return;
+        }
+
+        if ("geolocation" in navigator) {
+            // Pengaturan GPS Presisi Tinggi (Setara WhatsApp)
+            var gpsOptions = {
+                enableHighAccuracy: true, // Memaksa hardware chip GPS aktif
+                timeout: 15000,           // Menunggu kuncian satelit maksimal 15 detik
+                maximumAge: 0             // Membuang data cache lokasi lama/IP Provider
+            };
+
+            navigator.geolocation.watchPosition(function(p) {
+                currentLat = p.coords.latitude; 
+                currentLng = p.coords.longitude;
+                var akurasi = Math.round(p.coords.accuracy);
+
+                document.getElementById('status-gps').style.color = '#16a34a';
+                document.getElementById('status-gps').innerText = `🟢 GPS AKTIF (Akurasi: ±${akurasi}m)`;
+                document.getElementById('txt-koordinat').innerHTML = `<b>Koordinat Presisi:</b><br>Lat: ${currentLat.toFixed(6)}<br>Lng: ${currentLng.toFixed(6)}<br><small style="color:#0284c7;">Akurasi Satelit: ±${akurasi} Meter</small>`;
+                
+                // Kirim koordinat awal
+                kirimUpdateLokasi(0);
+            }, function(err) {
+                document.getElementById('status-gps').style.color = '#dc2626';
+                document.getElementById('status-gps').innerText = '❌ Gagal GPS: ' + err.message;
+            }, gpsOptions);
+
+            if (!gpsInterval) {
+                gpsInterval = setInterval(function() {
+                    kirimUpdateLokasi(0);
+                    syncDataWithServer();
+                }, 3000);
+            }
+            showToastMobile('🟢 GPS Presisi Berhasil Dihubungkan');
+        }
+    }
+
+    function kirimUpdateLokasi(status) {
+        var nrp = document.getElementById('nrp').value.trim();
+        if (!nrp || currentLat === 0) return;
+        fetch('/api/location/update', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nrp: nrp, latitude: currentLat, longitude: currentLng, status_darurat: status })
+        });
+    }
+
+    function kirimPanic() {
+        if (currentLat === 0) {
+            showToastMobile('⚠️ Hubungkan GPS di menu Profil dulu!');
+            return;
+        }
+        kirimUpdateLokasi(1);
+        showToastMobile('🚨 SINYAL DARURAT TERKIRIM!');
+    }
+
+    function syncDataWithServer() {
+        var nrp = document.getElementById('nrp').value.trim();
+        if (!nrp) return;
+
+        fetch(`/api/mobile/sync/${nrp}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.siaran_darurat && data.siaran_darurat.pesan !== lastSiaran) {
+                    lastSiaran = data.siaran_darurat.pesan;
+                    document.getElementById('txt-siaran-admin').innerText = data.siaran_darurat.pesan;
+                    document.getElementById('modal-siaran-admin').style.display = 'flex';
+                }
+
+                let htmlPesan = '', htmlNotif = '';
+                if (data.laporan_saya) {
+                    data.laporan_saya.forEach(item => {
+                        let txtBalasan = item.balasan ? `<div class="item-balasan"><b>👮 BALASAN ADMIN:</b><br>${item.balasan}</div>` : '<i style="font-size:10px; color:#94a3b8;">Belum dibalas</i>';
+                        htmlPesan += `<div style="background:#f8fafc; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #e2e8f0;"><b>Laporan Saya (${item.waktu}):</b><br>${item.keterangan}${txtBalasan}</div>`;
+                        if (item.balasan) htmlNotif += `<div class="item-balasan">🔔 Admin membalas: "${item.balasan}"</div>`;
+                    });
+                }
+                document.getElementById('list-pesan-balasan').innerHTML = htmlPesan;
+                document.getElementById('list-notifikasi').innerHTML = htmlNotif || '<p style="font-size:12px; color:#64748b;">Belum ada notifikasi baru</p>';
+            }).catch(e => console.error("Sync error"));
+    }
+
+    function tutupSiaran() {
+        document.getElementById('modal-siaran-admin').style.display = 'none';
+    }
+
+    function kirimPesanTeks() {
+        var nrp = document.getElementById('nrp').value.trim();
+        var nama = document.getElementById('nama').value.trim();
+        var ket = document.getElementById('ket-pesan').value.trim();
+        if (!ket) { showToastMobile('⚠️ Isi pesan laporan dahulu!'); return; }
+        postLaporan(nrp, nama, ket, "");
+    }
+
+    function kirimLaporanFoto() {
+        var nrp = document.getElementById('nrp').value.trim();
+        var nama = document.getElementById('nama').value.trim();
+        var ket = document.getElementById('ket-kamera').value.trim();
+        if (!base64Foto) { showToastMobile('⚠️ Pilih foto dahulu!'); return; }
+        postLaporan(nrp, nama, ket || "Laporan Foto", base64Foto);
+    }
+
+    function postLaporan(nrp, nama, ket, foto) {
+        fetch('/api/laporan/kirim', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nrp: nrp, nama: nama, keterangan: ket, foto: foto, latitude: currentLat, longitude: currentLng })
+        }).then(() => {
+            showToastMobile('📤 Laporan Berhasil Dikirim');
+            document.getElementById('ket-pesan').value = ''; document.getElementById('ket-kamera').value = ''; base64Foto = "";
+            syncDataWithServer();
+        });
+    }
+</script>
+
+</body>
+</html
