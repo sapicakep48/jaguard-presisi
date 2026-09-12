@@ -33,8 +33,10 @@ jobs:
           cp index.html manifest.json jaguard_app/www/
           cd jaguard_app
           cordova platform add android
+          cordova build android --release -- --packageType=apk
+          
           keytool -genkey -v -keystore release.keystore -alias jaguard -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Jaguard, OU=Presisi, O=Jaguard, L=City, S=State, C=ID"
-          cordova build android --release
+          
           cd platforms/android/app/build/outputs/apk/release/
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore ../../../../../release.keystore -storepass 123456 app-release-unsigned.apk jaguard
           mv app-release-unsigned.apk JAGUARD_PRESISI_SIGNED.apk
