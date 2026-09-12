@@ -14,18 +14,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Build Android APK (TWA)
+        uses: pwa-builder/builder-action@v1
         with:
-          node-version: 18
-
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
-
-      - name: Generate Android Project & Build APK
-        run: |
-          bubblewrap init --manifest=manifest.json
-          bubblewrap build
+          manifest-url: 'https://raw.githubusercontent.com/sapicakep48/jaguard-presisi/main/manifest.json'
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v3
