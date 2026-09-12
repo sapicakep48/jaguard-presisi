@@ -35,10 +35,12 @@ jobs:
           cordova platform add android
           cordova build android --release -- --packageType=apk
           
+          # Buat keystore langsung di folder APK release
+          cd platforms/android/app/build/outputs/apk/release/
           keytool -genkey -v -keystore release.keystore -alias jaguard -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Jaguard, OU=Presisi, O=Jaguard, L=City, S=State, C=ID"
           
-          cd platforms/android/app/build/outputs/apk/release/
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore ../../../../../release.keystore -storepass 123456 app-release-unsigned.apk jaguard
+          # Sign APK di lokasi yang sama
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore release.keystore -storepass 123456 app-release-unsigned.apk jaguard
           mv app-release-unsigned.apk JAGUARD_PRESISI_SIGNED.apk
 
       - name: Upload APK Artifact
